@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ezan Vakitleri</title>
+    <title>Dünya Ezan Vakitleri</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -15,47 +16,121 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
             text-align: center;
+            margin-bottom: 30px;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 30px;
+            color: white;
             font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .city-selector {
-            margin-bottom: 30px;
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
         }
 
-        select {
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        select, input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 16px;
             background: white;
             cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .search-box input {
+            padding-left: 45px;
+        }
+
+        .prayer-times-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .current-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .location-info h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .date-time {
+            text-align: right;
+        }
+
+        .time {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .date {
+            font-size: 1.1rem;
+            opacity: 0.9;
         }
 
         .prayer-times {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
-            margin-top: 20px;
         }
 
         .prayer-card {
@@ -63,138 +138,251 @@
             padding: 20px;
             border-radius: 10px;
             border-left: 4px solid #667eea;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
 
-        .prayer-name {
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
+        .prayer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .prayer-time {
-            font-size: 1.2rem;
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .current-time {
-            background: #667eea;
+        .prayer-card.current {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             transform: scale(1.05);
         }
 
-        .current-time .prayer-name {
-            color: white;
-        }
-
-        .current-time .prayer-time {
-            color: white;
-        }
-
-        .date-display {
-            color: #666;
-            margin-bottom: 20px;
+        .prayer-name {
+            font-weight: bold;
             font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .prayer-time {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .prayer-card.current .prayer-time {
+            color: white;
+        }
+
+        .next-prayer {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin-top: 20px;
+            font-weight: bold;
         }
 
         .loading {
+            text-align: center;
+            padding: 40px;
             color: #666;
-            font-style: italic;
+            font-size: 1.2rem;
         }
 
-        @media (max-width: 480px) {
-            .container {
-                padding: 20px;
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .control-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .current-info {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .date-time {
+                text-align: center;
+            }
+            
+            .time {
+                font-size: 2rem;
             }
             
             h1 {
                 font-size: 2rem;
-            }
-            
-            .prayer-times {
-                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📿 Ezan Vakitleri</h1>
-        
-        <div class="date-display" id="dateDisplay"></div>
-        
-        <div class="city-selector">
-            <select id="citySelect">
-                <option value="">Şehir seçin...</option>
-                <option value="istanbul">İstanbul</option>
-                <option value="ankara">Ankara</option>
-                <option value="izmir">İzmir</option>
-                <option value="konya">Konya</option>
-                <option value="bursa">Bursa</option>
-                <option value="antalya">Antalya</option>
-            </select>
+        <header>
+            <h1><i class="fas fa-mosque"></i> Dünya Ezan Vakitleri</h1>
+            <div class="subtitle">Türkiye ve İslam Dünyası için Doğru Vakitler</div>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Şehir veya ülke ara...">
+                </div>
+                <select id="countrySelect">
+                    <option value="">Ülke seçin...</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <select id="citySelect">
+                    <option value="">Şehir seçin...</option>
+                </select>
+                <select id="districtSelect">
+                    <option value="">İlçe seçin (opsiyonel)</option>
+                </select>
+            </div>
         </div>
 
-        <div id="prayerTimes" class="prayer-times">
-            <div class="loading">Lütfen bir şehir seçin...</div>
+        <div class="prayer-times-container">
+            <div id="currentInfo" class="current-info">
+                <div class="location-info">
+                    <h2 id="locationName">Konum Seçin</h2>
+                    <div id="locationDetails"></div>
+                </div>
+                <div class="date-time">
+                    <div class="time" id="currentTime">--:--:--</div>
+                    <div class="date" id="currentDate">-- -- ----</div>
+                </div>
+            </div>
+
+            <div id="nextPrayerInfo" class="next-prayer" style="display: none;"></div>
+
+            <div id="prayerTimes" class="prayer-times">
+                <div class="loading">
+                    <i class="fas fa-compass fa-spin"></i><br>
+                    Lütfen bir konum seçin...
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Şehirlerin koordinatları (basit örnek veriler)
-        const cities = {
-            'istanbul': { lat: 41.0082, lon: 28.9784 },
-            'ankara': { lat: 39.9334, lon: 32.8597 },
-            'izmir': { lat: 38.4237, lon: 27.1428 },
-            'konya': { lat: 37.8667, lon: 32.4833 },
-            'bursa': { lat: 40.2669, lon: 29.0634 },
-            'antalya': { lat: 36.8969, lon: 30.7133 }
+        // Türkiye illeri ve ilçeleri (kısmi liste - tamamı uzun olur)
+        const turkeyCities = {
+            'istanbul': { 
+                lat: 41.0082, 
+                lon: 28.9784,
+                districts: ['Adalar', 'Arnavutköy', 'Ataşehir', 'Avcılar', 'Bağcılar', 'Bahçelievler', 'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beykoz', 'Beylikdüzü', 'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Çekmeköy', 'Esenler', 'Esenyurt', 'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kadıköy', 'Kağıthane', 'Kartal', 'Küçükçekmece', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sarıyer', 'Silivri', 'Sultanbeyli', 'Sultangazi', 'Şile', 'Şişli', 'Tuzla', 'Ümraniye', 'Üsküdar', 'Zeytinburnu']
+            },
+            'ankara': { 
+                lat: 39.9334, 
+                lon: 32.8597,
+                districts: ['Altındağ', 'Ayaş', 'Bala', 'Beypazarı', 'Çamlıdere', 'Çankaya', 'Çubuk', 'Elmadağ', 'Etimesgut', 'Evren', 'Gölbaşı', 'Güdül', 'Haymana', 'Kalecik', 'Kahramankazan', 'Keçiören', 'Kızılcahamam', 'Mamak', 'Nallıhan', 'Polatlı', 'Pursaklar', 'Sincan', 'Şereflikoçhisar', 'Yenimahalle']
+            },
+            // Diğer iller...
+            'izmir': { lat: 38.4237, lon: 27.1428, districts: [] },
+            'bursa': { lat: 40.2669, lon: 29.0634, districts: [] },
+            'antalya': { lat: 36.8969, lon: 30.7133, districts: [] },
+            'konya': { lat: 37.8667, lon: 32.4833, districts: [] },
+            'adana': { lat: 37.0000, lon: 35.3213, districts: [] },
+            'mersin': { lat: 36.8000, lon: 34.6333, districts: [] },
+            'trabzon': { lat: 41.0015, lon: 39.7178, districts: [] }
         };
 
-        // Ezan vakitleri API'si
+        // Müslüman ülkeler ve başkentleri
+        const muslimCountries = {
+            'turkey': { name: 'Türkiye', capital: 'Ankara', lat: 39.9334, lon: 32.8597 },
+            'saudi-arabia': { name: 'Suudi Arabistan', capital: 'Riyad', lat: 24.7136, lon: 46.6753 },
+            'uae': { name: 'Birleşik Arap Emirlikleri', capital: 'Abu Dabi', lat: 24.4539, lon: 54.3773 },
+            'egypt': { name: 'Mısır', capital: 'Kahire', lat: 30.0444, lon: 31.2357 },
+            'malaysia': { name: 'Malezya', capital: 'Kuala Lumpur', lat: 3.1390, lon: 101.6869 },
+            'indonesia': { name: 'Endonezya', capital: 'Cakarta', lat: -6.2088, lon: 106.8456 },
+            'pakistan': { name: 'Pakistan', capital: 'İslamabad', lat: 33.6844, lon: 73.0479 },
+            'morocco': { name: 'Fas', capital: 'Rabat', lat: 34.0209, lon: -6.8416 },
+            'tunisia': { name: 'Tunus', capital: 'Tunus', lat: 36.8065, lon: 10.1815 },
+            'jordan': { name: 'Ürdün', capital: 'Amman', lat: 31.9539, lon: 35.9106 },
+            'lebanon': { name: 'Lübnan', capital: 'Beyrut', lat: 33.8938, lon: 35.5018 },
+            'qatar': { name: 'Katar', capital: 'Doha', lat: 25.2769, lon: 51.5200 }
+        };
+
         const API_URL = 'https://api.aladhan.com/v1/timings';
 
-        // Tarih gösterimi
-        function updateDate() {
-            const now = new Date();
-            const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            document.getElementById('dateDisplay').textContent = 
-                now.toLocaleDateString('tr-TR', options);
+        // Ülke seçeneklerini yükle
+        function loadCountries() {
+            const countrySelect = document.getElementById('countrySelect');
+            Object.keys(muslimCountries).forEach(countryCode => {
+                const option = document.createElement('option');
+                option.value = countryCode;
+                option.textContent = muslimCountries[countryCode].name;
+                countrySelect.appendChild(option);
+            });
+        }
+
+        // Şehir seçeneklerini yükle
+        function loadCities(countryCode) {
+            const citySelect = document.getElementById('citySelect');
+            citySelect.innerHTML = '<option value="">Şehir seçin...</option>';
+            
+            if (countryCode === 'turkey') {
+                Object.keys(turkeyCities).forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city.charAt(0).toUpperCase() + city.slice(1);
+                    citySelect.appendChild(option);
+                });
+            } else if (muslimCountries[countryCode]) {
+                const option = document.createElement('option');
+                option.value = muslimCountries[countryCode].capital.toLowerCase();
+                option.textContent = muslimCountries[countryCode].capital;
+                citySelect.appendChild(option);
+            }
+        }
+
+        // İlçe seçeneklerini yükle
+        function loadDistricts(city) {
+            const districtSelect = document.getElementById('districtSelect');
+            districtSelect.innerHTML = '<option value="">İlçe seçin (opsiyonel)</option>';
+            
+            if (turkeyCities[city] && turkeyCities[city].districts.length > 0) {
+                turkeyCities[city].districts.forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
+                });
+            }
         }
 
         // Ezan vakitlerini getir
-        async function getPrayerTimes(city) {
-            const cityData = cities[city];
-            if (!cityData) return null;
-
+        async function getPrayerTimes(lat, lon) {
             const today = new Date();
             const dateString = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
 
             try {
                 const response = await fetch(
-                    `${API_URL}/${dateString}?latitude=${cityData.lat}&longitude=${cityData.lon}&method=2`
+                    `${API_URL}/${dateString}?latitude=${lat}&longitude=${lon}&method=2`
                 );
                 const data = await response.json();
-                return data.data.timings;
+                return data.data;
             } catch (error) {
                 console.error('API hatası:', error);
                 return null;
             }
         }
 
-        // Ezan vakitlerini göster
-        async function showPrayerTimes(city) {
-            const container = document.getElementById('prayerTimes');
-            container.innerHTML = '<div class="loading">Ezan vakitleri yükleniyor...</div>';
+        // Zamanı formatla
+        function formatTime(timeString) {
+            return timeString.replace(/:/g, ':');
+        }
 
-            const times = await getPrayerTimes(city);
-            if (!times) {
-                container.innerHTML = '<div class="loading">Hata: Ezan vakitleri alınamadı</div>';
+        // Ezan vakitlerini göster
+        async function showPrayerTimes(locationName, lat, lon) {
+            const container = document.getElementById('prayerTimes');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><br>Ezan vakitleri yükleniyor...</div>';
+
+            const data = await getPrayerTimes(lat, lon);
+            if (!data) {
+                container.innerHTML = '<div class="error"><i class="fas fa-exclamation-triangle"></i><br>Ezan vakitleri alınamadı</div>';
                 return;
             }
 
@@ -209,50 +397,113 @@
 
             const currentTime = new Date();
             let currentPrayer = '';
+            let nextPrayer = '';
+            let nextPrayerTime = null;
 
-            // Şu anki vakti bul
+            // Şu anki ve bir sonraki vakti bul
             const prayers = Object.keys(prayerNames);
-            for (let i = prayers.length - 1; i >= 0; i--) {
+            for (let i = 0; i < prayers.length; i++) {
                 const prayerTime = new Date();
-                const [hours, minutes] = times[prayers[i]].split(':');
+                const [hours, minutes] = data.timings[prayers[i]].split(':');
                 prayerTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
                 
-                if (currentTime >= prayerTime) {
-                    currentPrayer = prayers[i];
+                if (currentTime < prayerTime) {
+                    nextPrayer = prayers[i];
+                    nextPrayerTime = prayerTime;
                     break;
                 }
+                currentPrayer = prayers[i];
             }
 
+            // Konum bilgisini güncelle
+            document.getElementById('locationName').textContent = locationName;
+            document.getElementById('locationDetails').textContent = `Enlem: ${lat.toFixed(4)}, Boylam: ${lon.toFixed(4)}`;
+
+            // Sonraki ezan bilgisini göster
+            if (nextPrayer) {
+                const nextPrayerDiv = document.getElementById('nextPrayerInfo');
+                const timeDiff = nextPrayerTime - currentTime;
+                const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
+                const minutesLeft = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                
+                nextPrayerDiv.innerHTML = `⏳ Sonraki ezan (${prayerNames[nextPrayer]}): ${nextPrayerTime.getHours()}:${nextPrayerTime.getMinutes().toString().padStart(2, '0')} - Kalan: ${hoursLeft}sa ${minutesLeft}dak`;
+                nextPrayerDiv.style.display = 'block';
+            }
+
+            // Ezan vakitlerini göster
             container.innerHTML = '';
             Object.keys(prayerNames).forEach(prayer => {
                 const card = document.createElement('div');
-                card.className = `prayer-card ${prayer === currentPrayer ? 'current-time' : ''}`;
+                card.className = `prayer-card ${prayer === currentPrayer ? 'current' : ''}`;
                 
                 card.innerHTML = `
                     <div class="prayer-name">${prayerNames[prayer]}</div>
-                    <div class="prayer-time">${times[prayer]}</div>
+                    <div class="prayer-time">${formatTime(data.timings[prayer])}</div>
                 `;
                 
                 container.appendChild(card);
             });
         }
 
+        // Saat ve tarihi güncelle
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleTimeString('tr-TR');
+            document.getElementById('currentDate').textContent = 
+                now.toLocaleDateString('tr-TR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+        }
+
         // Sayfa yüklendiğinde
         document.addEventListener('DOMContentLoaded', function() {
-            updateDate();
+            loadCountries();
+            updateDateTime();
             
-            // Şehir seçimi değiştiğinde
-            document.getElementById('citySelect').addEventListener('change', function() {
+            // Ülke değiştiğinde
+            document.getElementById('countrySelect').addEventListener('change', function() {
                 if (this.value) {
-                    showPrayerTimes(this.value);
-                } else {
-                    document.getElementById('prayerTimes').innerHTML = 
-                        '<div class="loading">Lütfen bir şehir seçin...</div>';
+                    loadCities(this.value);
+                    document.getElementById('districtSelect').innerHTML = '<option value="">İlçe seçin (opsiyonel)</option>';
                 }
             });
 
-            // Her dakika tarihi güncelle
-            setInterval(updateDate, 60000);
+            // Şehir değiştiğinde
+            document.getElementById('citySelect').addEventListener('change', function() {
+                if (this.value) {
+                    loadDistricts(this.value);
+                    
+                    const country = document.getElementById('countrySelect').value;
+                    let lat, lon, locationName;
+                    
+                    if (country === 'turkey') {
+                        const cityData = turkeyCities[this.value];
+                        lat = cityData.lat;
+                        lon = cityData.lon;
+                        locationName = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+                    } else {
+                        const countryData = muslimCountries[country];
+                        lat = countryData.lat;
+                        lon = countryData.lon;
+                        locationName = `${countryData.capital}, ${countryData.name}`;
+                    }
+                    
+                    showPrayerTimes(locationName, lat, lon);
+                }
+            });
+
+            // Arama kutusu
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                // Arama fonksiyonelliği buraya eklenecek
+            });
+
+            // Saati güncelle
+            setInterval(updateDateTime, 1000);
         });
     </script>
 </body>
