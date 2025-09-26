@@ -60,37 +60,4 @@
 </head>
 <body>
     <div class="container">
-        <h1>🕌 Günün Ezan Saatleri</h1>
-        <select id="sehir">
-            <option value="Istanbul">İstanbul</option>
-            <option value="Ankara">Ankara</option>
-            <option value="Adana">Adana</option>
-            <option value="Izmir">İzmir</option>
-            <option value="Bursa">Bursa</option>
-        </select>
-        <button onclick="getVakitler()">Saatleri Getir</button>
-        <div id="sonuc" class="vakitler"></div>
-    </div>
-
-    <script>
-        async function getVakitler() {
-            const sehir = document.getElementById('sehir').value;
-            const apiUrl = `http://api.aladhan.com/v1/timingsByCity?city=${sehir}&country=Turkey&method=13`; // Diyanet yöntemi: 13
-
-            const sonucDiv = document.getElementById('sonuc');
-            sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error('API hatası: ' + response.status);
-                const data = await response.json();
-                const timings = data.data.timings;
-
-                // Vakit isimleri ve saatler
-                const vakitler = [
-                    { isim: 'İmsak', saat: timings.Fajr },
-                    { isim: 'Sabah', saat: timings.Sunrise },
-                    { isim: 'Öğle', saat: timings.Dhuhr },
-                    { isim: 'İkindi', saat: timings.Asr },
-                    { isim: 'Akşam', saat: timings.Maghrib },
-                    { isim: 'Yatsı', saat: timings.Isha
+        <h1>🕌 Günün Ezan Saatleri</
