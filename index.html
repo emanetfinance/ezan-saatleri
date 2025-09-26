@@ -75,7 +75,6 @@
     <script>
         async function getVakitler() {
             const sehir = document.getElementById('sehir').value;
-            const bugun = new Date();
             const apiUrl = `http://api.aladhan.com/v1/timingsByCity?city=${sehir}&country=Turkey&method=13`; // Diyanet yöntemi: 13
 
             const sonucDiv = document.getElementById('sonuc');
@@ -92,4 +91,6 @@
                     { isim: 'İmsak', saat: timings.Fajr },
                     { isim: 'Sabah', saat: timings.Sunrise },
                     { isim: 'Öğle', saat: timings.Dhuhr },
-                    { isim: 'İkindi', saat: timings.Asr
+                    { isim: 'İkindi', saat: timings.Asr },
+                    { isim: 'Akşam', saat: timings.Maghrib },
+                    { isim: 'Yatsı', saat: timings.Isha
