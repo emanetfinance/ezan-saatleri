@@ -5,60 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ezan Saatleri</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px; }
-        h1 { color: #333; }
-        input, button { padding: 10px; margin: 10px; font-size: 16px; }
-        table { margin: 20px auto; border-collapse: collapse; width: 50%; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #4CAF50; color: white; }
-        .error { color: red; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .vakitler {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .vakit {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+        }
+        .error {
+            color: #e53e3e;
+        }
     </style>
 </head>
 <body>
-    <h1>Ezan Saatleri</h1>
-    <p>Şehir girin (örneğin: Istanbul, Ankara):</p>
-    <input type="text" id="city" placeholder="Şehir adı" value="Istanbul">
-    <button onclick="getPrayerTimes()">Vakitleri Getir</button>
-    <div id="result"></div>
-    <div id="error" class="error"></div>
+    <div class="container">
+        <h1>🕌 Günün Ezan Saatleri</h1>
+        <select id="sehir">
+            <option value="Istanbul">İstanbul</option>
+            <option value="Ankara">Ankara</option>
+            <option value="Adana">Adana</option>
+            <option value="Izmir">İzmir</option>
+            <option value="Bursa">Bursa</option>
+        </select>
+        <button onclick="getVakitler()">Saatleri Getir</button>
+        <div id="sonuc" class="vakitler"></div>
+    </div>
 
     <script>
-        async function getPrayerTimes() {
-            const city = document.getElementById('city').value.trim();
-            const country = 'Turkey';
-            const method = 5; // Diyanet yöntemi
+        async function getVakitler() {
+            const sehir = document.getElementById('sehir').value;
+            const apiUrl = `http://api.aladhan.com/v1/timingsByCity?city=${sehir}&country=Turkey&method=13`;
 
-            if (!city) {
-                document.getElementById('error').innerText = 'Lütfen bir şehir girin!';
-                return;
-            }
-
-            const url = `http://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${method}`;
+            const sonucDiv = document.getElementById('sonuc');
+            sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
 
             try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('API hatası');
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('API hatası: ' + response.status);
                 const data = await response.json();
                 const timings = data.data.timings;
 
-                let table = '<table><tr><th>Vakit</th><th>Saat</th></tr>';
-                table += `<tr><td>İmsak</td><td>${timings.Imsak}</td></tr>`;
-                table += `<tr><td>Sabah</td><td>${timings.Fajr}</td></tr>`;
-                table += `<tr><td>Öğle</td><td>${timings.Dhuhr}</td></tr>`;
-                table += `<tr><td>İkindi</td><td>${timings.Asr}</td></tr>`;
-                table += `<tr><td>Akşam</td><td>${timings.Maghrib}</td></tr>`;
-                table += `<tr><td>Yatsı</td><td>${timings.Isha}</td></tr>`;
-                table += '</table>';
+                // Vakit isimleri ve saatler
+                const vakitler = [
+                    { isim: 'İmsak', saat: timings.Fajr },
+                    { isim: 'Sabah', saat: timings.Sunrise },
+                    { isim: 'Öğle', saat: timings.Dhuhr },
+                    { isim: 'İkindi', saat: timings.Asr },
+                    { isim: 'Akşam', saat: timings.Maghrib },
+                    { isim: 'Yatsı', saat: timings.Isha }
+                ];
 
-                document.getElementById('result').innerHTML = table;
-                document.getElementById('error').innerText = '';
+                let html = '';
+                vakitler.forEach(v => {
+                    html += `<div class="vakit"><span>${v.isim}:</span><span>${v.saat}</span></div>`;
+                });
+                sonucDiv.innerHTML = html;
             } catch (error) {
-                document.getElementById('error').innerText = 'Hata: Şehir bulunamadı veya bağlantı sorunu. Doğru yazdığınızdan emin olun.';
+                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen tekrar deneyin.</div>`;
             }
         }
 
-        // Sayfa yüklendiğinde varsayılan şehir için getir
-        window.onload = getPrayerTimes;
+        // Sayfa yüklendiğinde otomatik getir
+        window.onload = getVakitler;
     </script>
 </body>
 </html>
