@@ -35,7 +35,6 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
-            width: 100%;
         }
         .vakitler {
             display: grid;
@@ -57,23 +56,6 @@
         .error {
             color: #e53e3e;
         }
-        button {
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-        button:hover {
-            background: #764ba2;
-        }
-        #sesIzni {
-            margin-top: 10px;
-            font-size: 12px;
-            color: #666;
-        }
     </style>
 </head>
 <body>
@@ -86,62 +68,17 @@
             <option value="35">İzmir</option>
             <option value="16">Bursa</option>
             <option value="7">Antalya</option>
+            <!-- Daha fazla il kodu için: https://awqatsalah.diyanet.gov.tr/api/il -->
         </select>
         <button onclick="getVakitler()">Saatleri Getir</button>
-        <button onclick="sesBildirimIzni()">Sesli Bildirimleri Etkinleştir</button>
-        <div id="sesIzni">Sesli bildirimler kapalı.</div>
         <div id="sonuc" class="vakitler"></div>
     </div>
 
     <script>
-        // Şehir kodları ve koordinatlar
-        const sehirler = [
-            { id: "34", ad: "İstanbul", lat: 41.0082, lon: 28.9784 },
-            { id: "6", ad: "Ankara", lat: 39.9334, lon: 32.8597 },
-            { id: "2", ad: "Adana", lat: 37.0000, lon: 35.3213 },
-            { id: "35", ad: "İzmir", lat: 38.4237, lon: 27.1428 },
-            { id: "16", ad: "Bursa", lat: 40.1828, lon: 29.0670 },
-            { id: "7", ad: "Antalya", lat: 36.8969, lon: 30.7133 }
-        ];
-
-        // Mesafe hesaplama
-        function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        // En yakın şehir
-        function findNearestCity(lat, lon) {
-            let nearest = sehirler[0];
-            let minDistance = getDistance(lat, lon, nearest.lat, nearest.lon);
-            sehirler.forEach(sehir => {
-                const distance = getDistance(lat, lon, sehir.lat, sehir.lon);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = sehir;
-                }
-            });
-            return nearest.id;
-        }
-
-        // Vakitleri dakikaya çevir
-        function saatToDakika(saatStr) {
-            if (!saatStr) return null;
-            const [saat, dakika] = saatStr.split(':').map(Number);
-            return saat * 60 + dakika;
-        }
-
-        async function getVakitler(sehirKodu = null) {
-            const sehirSelect = document.getElementById('sehir');
-            const sehir = sehirKodu || sehirSelect.value;
-            const bugun = new Date().toISOString().split('T')[0];
-            const apiUrl = `https://awqatsalah.diyanet.gov.tr/api/v1/il/${sehir}/${bugun}`;
+        async function getVakitler() {
+            const sehirKodu = document.getElementById('sehir').value;
+            const bugun = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const apiUrl = `https://awqatsalah.diyanet.gov.tr/api/v1/il/${sehirKodu}/${bugun}`;
 
             const sonucDiv = document.getElementById('sonuc');
             sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
@@ -155,19 +92,14 @@
                 const data = await response.json();
                 console.log('API yanıtı:', data);
 
-                // Veri kontrolü
-                if (!data || !data.Imsak) {
-                    throw new Error('API yanıtı eksik veya hatalı.');
-                }
-
-                // Vakit isimleri ve saatler
+                // Vakit isimleri ve saatler (Diyanet formatı)
                 const vakitler = [
-                    { isim: 'İmsak', saat: data.Imsak || 'Bilinmiyor' },
-                    { isim: 'Sabah', saat: data.Gunes || 'Bilinmiyor' },
-                    { isim: 'Öğle', saat: data.Ogle || 'Bilinmiyor' },
-                    { isim: 'İkindi', saat: data.Ikindi || 'Bilinmiyor' },
-                    { isim: 'Akşam', saat: data.Aksam || 'Bilinmiyor' },
-                    { isim: 'Yatsı', saat: data.Yatsi || 'Bilinmiyor' }
+                    { isim: 'İmsak', saat: data.Imsak },
+                    { isim: 'Sabah', saat: data.Gunes },
+                    { isim: 'Öğle', saat: data.Ogle },
+                    { isim: 'İkindi', saat: data.Ikindi },
+                    { isim: 'Akşam', saat: data.Aksam },
+                    { isim: 'Yatsı', saat: data.Yatsi }
                 ];
 
                 let html = '';
@@ -175,70 +107,14 @@
                     html += `<div class="vakit"><span>${v.isim}:</span><span>${v.saat}</span></div>`;
                 });
                 sonucDiv.innerHTML = html;
-
-                sehirSelect.value = sehir;
-
-                // Sesli bildirim için vakitleri sakla
-                window.currentVakitler = vakitler;
-                vakitKontrolBaslat();
             } catch (error) {
                 console.error('Hata detayları:', error);
-                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen tekrar deneyin veya başka bir şehir seçin.</div>`;
+                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen tekrar deneyin.</div>`;
             }
         }
 
-        // Sesli bildirim izni ve kontrol
-        let bildirimInterval;
-        function sesBildirimIzni() {
-            if ('Notification' in window && 'AudioContext' in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        document.getElementById('sesIzni').textContent = 'Sesli bildirimler etkin!';
-                        window.ezanSes = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.wav');
-                    } else {
-                        document.getElementById('sesIzni').textContent = 'İzin reddedildi.';
-                    }
-                });
-            } else {
-                document.getElementById('sesIzni').textContent = 'Tarayıcı bildirimleri desteklemiyor.';
-            }
-        }
-
-        function vakitKontrolBaslat() {
-            if (!window.currentVakitler || Notification.permission !== 'granted') return;
-            clearInterval(bildirimInterval);
-            bildirimInterval = setInterval(() => {
-                const simdi = new Date();
-                const dakikaSimdi = simdi.getHours() * 60 + simdi.getMinutes();
-                window.currentVakitler.forEach(v => {
-                    const dakikaVakit = saatToDakika(v.saat);
-                    if (dakikaVakit && Math.abs(dakikaSimdi - dakikaVakit) <= 1) {
-                        new Notification(`${v.isim} Ezanı!`, { body: `${v.saat} - Haydi namaza!` });
-                        window.ezanSes.play().catch(e => console.log('Ses çalma hatası:', e));
-                    }
-                });
-            }, 60000);
-        }
-
-        // Sayfa yüklenince
-        window.onload = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        const nearestCityId = findNearestCity(position.coords.latitude, position.coords.longitude);
-                        console.log('Konum bulundu, şehir:', nearestCityId);
-                        getVakitler(nearestCityId);
-                    },
-                    error => {
-                        console.error('Konum hatası:', error);
-                        getVakitler(); // Varsayılan: İstanbul
-                    }
-                );
-            } else {
-                console.log('Konum desteklenmiyor, varsayılan şehir yükleniyor.');
-                getVakitler();
-            }
-        };
+        // Sayfa yüklendiğinde otomatik getir
+        window.onload = getVakitler;
     </script>
 </body>
 </html>
