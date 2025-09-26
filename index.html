@@ -3,135 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ezan Saatleri</title>
+    <title>Ezan Vakitleri</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        * {
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            padding: 20px;
         }
+
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
             text-align: center;
-            max-width: 400px;
-            width: 100%;
         }
+
         h1 {
-            color: #4a5568;
-            margin-bottom: 20px;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
         }
+
+        .city-selector {
+            margin-bottom: 30px;
+        }
+
         select {
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
             width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
         }
-        .vakitler {
+
+        .prayer-times {
             display: grid;
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
             margin-top: 20px;
         }
-        .vakit {
-            background: #f7fafc;
-            padding: 15px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
+
+        .prayer-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .prayer-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .prayer-time {
+            font-size: 1.2rem;
+            color: #667eea;
             font-weight: bold;
         }
-        .loading {
-            text-align: center;
-            color: #667eea;
-        }
-        .error {
-            color: #e53e3e;
-        }
-        button {
-            padding: 10px 20px;
+
+        .current-time {
             background: #667eea;
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 20px;
+            transform: scale(1.05);
         }
-        button:hover {
-            background: #764ba2;
+
+        .current-time .prayer-name {
+            color: white;
+        }
+
+        .current-time .prayer-time {
+            color: white;
+        }
+
+        .date-display {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .prayer-times {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🕌 Günün Ezan Saatleri</h1>
-        <select id="sehir">
-            <option value="istanbul">İstanbul</option>
-            <option value="ankara">Ankara</option>
-            <option value="adana">Adana</option>
-            <option value="izmir">İzmir</option>
-            <option value="bursa">Bursa</option>
-            <option value="antalya">Antalya</option>
-        </select>
-        <button onclick="getVakitler()">Saatleri Getir</button>
-        <div id="sonuc" class="vakitler"></div>
+        <h1>📿 Ezan Vakitleri</h1>
+        
+        <div class="date-display" id="dateDisplay"></div>
+        
+        <div class="city-selector">
+            <select id="citySelect">
+                <option value="">Şehir seçin...</option>
+                <option value="istanbul">İstanbul</option>
+                <option value="ankara">Ankara</option>
+                <option value="izmir">İzmir</option>
+                <option value="konya">Konya</option>
+                <option value="bursa">Bursa</option>
+                <option value="antalya">Antalya</option>
+            </select>
+        </div>
+
+        <div id="prayerTimes" class="prayer-times">
+            <div class="loading">Lütfen bir şehir seçin...</div>
+        </div>
     </div>
 
     <script>
-        async function getVakitler() {
-            const sehir = document.getElementById('sehir').value;
-            const bugun = new Date().toISOString().split('T')[0];
-            const apiUrl = `https://vakit.vercel.app/api/times/city/${sehir}?date=${bugun}`;
+        // Şehirlerin koordinatları (basit örnek veriler)
+        const cities = {
+            'istanbul': { lat: 41.0082, lon: 28.9784 },
+            'ankara': { lat: 39.9334, lon: 32.8597 },
+            'izmir': { lat: 38.4237, lon: 27.1428 },
+            'konya': { lat: 37.8667, lon: 32.4833 },
+            'bursa': { lat: 40.2669, lon: 29.0634 },
+            'antalya': { lat: 36.8969, lon: 30.7133 }
+        };
 
-            const sonucDiv = document.getElementById('sonuc');
-            sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
+        // Ezan vakitleri API'si
+        const API_URL = 'https://api.aladhan.com/v1/timings';
+
+        // Tarih gösterimi
+        function updateDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('dateDisplay').textContent = 
+                now.toLocaleDateString('tr-TR', options);
+        }
+
+        // Ezan vakitlerini getir
+        async function getPrayerTimes(city) {
+            const cityData = cities[city];
+            if (!cityData) return null;
+
+            const today = new Date();
+            const dateString = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
 
             try {
-                console.log('API isteği gönderiliyor:', apiUrl);
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`API hatası: ${response.status} - ${response.statusText}`);
-                }
+                const response = await fetch(
+                    `${API_URL}/${dateString}?latitude=${cityData.lat}&longitude=${cityData.lon}&method=2`
+                );
                 const data = await response.json();
-                console.log('API yanıtı:', data);
-
-                // Veri kontrolü
-                if (!data || !data.times || !data.times.Imsak) {
-                    throw new Error('API yanıtı eksik veya hatalı.');
-                }
-
-                // Vakit isimleri ve saatler
-                const vakitler = [
-                    { isim: 'İmsak', saat: data.times.Imsak || 'Bilinmiyor' },
-                    { isim: 'Sabah', saat: data.times.Gunes || 'Bilinmiyor' },
-                    { isim: 'Öğle', saat: data.times.Ogle || 'Bilinmiyor' },
-                    { isim: 'İkindi', saat: data.times.Ikindi || 'Bilinmiyor' },
-                    { isim: 'Akşam', saat: data.times.Aksam || 'Bilinmiyor' },
-                    { isim: 'Yatsı', saat: data.times.Yatsi || 'Bilinmiyor' }
-                ];
-
-                let html = '';
-                vakitler.forEach(v => {
-                    html += `<div class="vakit"><span>${v.isim}:</span><span>${v.saat}</span></div>`;
-                });
-                sonucDiv.innerHTML = html;
+                return data.data.timings;
             } catch (error) {
-                console.error('Hata detayları:', error);
-                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen başka bir şehir seçin veya tekrar deneyin.</div>`;
+                console.error('API hatası:', error);
+                return null;
             }
         }
 
-        // Sayfa yüklenince otomatik getir
-        window.onload = getVakitler;
+        // Ezan vakitlerini göster
+        async function showPrayerTimes(city) {
+            const container = document.getElementById('prayerTimes');
+            container.innerHTML = '<div class="loading">Ezan vakitleri yükleniyor...</div>';
+
+            const times = await getPrayerTimes(city);
+            if (!times) {
+                container.innerHTML = '<div class="loading">Hata: Ezan vakitleri alınamadı</div>';
+                return;
+            }
+
+            const prayerNames = {
+                'Fajr': 'İmsak',
+                'Sunrise': 'Güneş',
+                'Dhuhr': 'Öğle',
+                'Asr': 'İkindi',
+                'Maghrib': 'Akşam',
+                'Isha': 'Yatsı'
+            };
+
+            const currentTime = new Date();
+            let currentPrayer = '';
+
+            // Şu anki vakti bul
+            const prayers = Object.keys(prayerNames);
+            for (let i = prayers.length - 1; i >= 0; i--) {
+                const prayerTime = new Date();
+                const [hours, minutes] = times[prayers[i]].split(':');
+                prayerTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                
+                if (currentTime >= prayerTime) {
+                    currentPrayer = prayers[i];
+                    break;
+                }
+            }
+
+            container.innerHTML = '';
+            Object.keys(prayerNames).forEach(prayer => {
+                const card = document.createElement('div');
+                card.className = `prayer-card ${prayer === currentPrayer ? 'current-time' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="prayer-name">${prayerNames[prayer]}</div>
+                    <div class="prayer-time">${times[prayer]}</div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDate();
+            
+            // Şehir seçimi değiştiğinde
+            document.getElementById('citySelect').addEventListener('change', function() {
+                if (this.value) {
+                    showPrayerTimes(this.value);
+                } else {
+                    document.getElementById('prayerTimes').innerHTML = 
+                        '<div class="loading">Lütfen bir şehir seçin...</div>';
+                }
+            });
+
+            // Her dakika tarihi güncelle
+            setInterval(updateDate, 60000);
+        });
     </script>
 </body>
 </html>
