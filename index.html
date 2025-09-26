@@ -81,9 +81,13 @@
             sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
 
             try {
+                console.log('API isteği gönderiliyor:', apiUrl); // Hangi URL'ye istek gittiğini görelim
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error('API hatası: ' + response.status);
+                if (!response.ok) {
+                    throw new Error(`API hatası: ${response.status} - ${response.statusText}`);
+                }
                 const data = await response.json();
+                console.log('API yanıtı:', data); // Yanıtı konsola yazalım
                 const timings = data.data.timings;
 
                 // Vakit isimleri ve saatler
@@ -102,6 +106,7 @@
                 });
                 sonucDiv.innerHTML = html;
             } catch (error) {
+                console.error('Hata detayları:', error); // Konsola detaylı hata yaz
                 sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen tekrar deneyin.</div>`;
             }
         }
