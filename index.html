@@ -35,6 +35,7 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+            width: 100%;
         }
         .vakitler {
             display: grid;
@@ -56,48 +57,106 @@
         .error {
             color: #e53e3e;
         }
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        #sesIzni {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🕌 Günün Ezan Saatleri</h1>
         <select id="sehir">
-            <option value="Istanbul">İstanbul</option>
-            <option value="Ankara">Ankara</option>
-            <option value="Adana">Adana</option>
-            <option value="Izmir">İzmir</option>
-            <option value="Bursa">Bursa</option>
+            <option value="34">İstanbul</option>
+            <option value="6">Ankara</option>
+            <option value="2">Adana</option>
+            <option value="35">İzmir</option>
+            <option value="16">Bursa</option>
+            <option value="7">Antalya</option>
         </select>
         <button onclick="getVakitler()">Saatleri Getir</button>
+        <button onclick="sesBildirimIzni()">Sesli Bildirimleri Etkinleştir</button>
+        <div id="sesIzni">Sesli bildirimler kapalı.</div>
         <div id="sonuc" class="vakitler"></div>
     </div>
 
     <script>
-        async function getVakitler() {
-            const sehir = document.getElementById('sehir').value;
-            const apiUrl = `https://api.aladhan.com/v1/timingsByCity?city=${sehir}&country=Turkey&method=13`; // HTTPS'e geçirildi!
+        // Şehir kodları ve koordinatlar
+        const sehirler = [
+            { id: "34", ad: "İstanbul", lat: 41.0082, lon: 28.9784 },
+            { id: "6", ad: "Ankara", lat: 39.9334, lon: 32.8597 },
+            { id: "2", ad: "Adana", lat: 37.0000, lon: 35.3213 },
+            { id: "35", ad: "İzmir", lat: 38.4237, lon: 27.1428 },
+            { id: "16", ad: "Bursa", lat: 40.1828, lon: 29.0670 },
+            { id: "7", ad: "Antalya", lat: 36.8969, lon: 30.7133 }
+        ];
+
+        // Mesafe hesaplama
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // En yakın şehir
+        function findNearestCity(lat, lon) {
+            let nearest = sehirler[0];
+            let minDistance = getDistance(lat, lon, nearest.lat, nearest.lon);
+            sehirler.forEach(sehir => {
+                const distance = getDistance(lat, lon, sehir.lat, sehir.lon);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = sehir;
+                }
+            });
+            return nearest.id;
+        }
+
+        // Vakitleri dakikaya çevir
+        function saatToDakika(saatStr) {
+            const [saat, dakika] = saatStr.split(':').map(Number);
+            return saat * 60 + dakika;
+        }
+
+        async function getVakitler(sehirKodu = null) {
+            const sehirSelect = document.getElementById('sehir');
+            const sehir = sehirKodu || sehirSelect.value;
+            const bugun = new Date().toISOString().split('T')[0];
+            const apiUrl = `https://awqatsalah.diyanet.gov.tr/api/v1/il/${sehir}/${bugun}`;
 
             const sonucDiv = document.getElementById('sonuc');
             sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
 
             try {
-                console.log('API isteği gönderiliyor:', apiUrl);
                 const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`API hatası: ${response.status} - ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`API hatası: ${response.status}`);
                 const data = await response.json();
-                console.log('API yanıtı:', data);
-                const timings = data.data.timings;
 
-                // Vakit isimleri ve saatler
                 const vakitler = [
-                    { isim: 'İmsak', saat: timings.Fajr },
-                    { isim: 'Sabah', saat: timings.Sunrise },
-                    { isim: 'Öğle', saat: timings.Dhuhr },
-                    { isim: 'İkindi', saat: timings.Asr },
-                    { isim: 'Akşam', saat: timings.Maghrib },
-                    { isim: 'Yatsı', saat: timings.Isha }
+                    { isim: 'İmsak', saat: data.Imsak },
+                    { isim: 'Sabah', saat: data.Gunes },
+                    { isim: 'Öğle', saat: data.Ogle },
+                    { isim: 'İkindi', saat: data.Ikindi },
+                    { isim: 'Akşam', saat: data.Aksam },
+                    { isim: 'Yatsı', saat: data.Yatsi }
                 ];
 
                 let html = '';
@@ -105,14 +164,41 @@
                     html += `<div class="vakit"><span>${v.isim}:</span><span>${v.saat}</span></div>`;
                 });
                 sonucDiv.innerHTML = html;
+
+                sehirSelect.value = sehir;
+
+                // Sesli bildirim için vakitleri sakla
+                window.currentVakitler = vakitler;
+                vakitKontrolBaslat();
             } catch (error) {
-                console.error('Hata detayları:', error);
-                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen tekrar deneyin.</div>`;
+                console.error('Hata:', error);
+                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}</div>`;
             }
         }
 
-        // Sayfa yüklendiğinde otomatik getir
-        window.onload = getVakitler;
-    </script>
-</body>
-</html>
+        // Sesli bildirim izni ve kontrol
+        let bildirimInterval;
+        function sesBildirimIzni() {
+            if ('Notification' in window && 'AudioContext' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        document.getElementById('sesIzni').textContent = 'Sesli bildirimler etkin!';
+                        // Ezan sesi (ücretsiz MP3, Vercel'e yükle veya external kullan)
+                        window.ezanSes = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'); // Örnek zil sesi, ezan MP3'ü değiştir
+                    } else {
+                        document.getElementById('sesIzni').textContent = 'İzin reddedildi.';
+                    }
+                });
+            }
+        }
+
+        function vakitKontrolBaslat() {
+            if (!window.currentVakitler || Notification.permission !== 'granted') return;
+            clearInterval(bildirimInterval);
+            bildirimInterval = setInterval(() => {
+                const simdi = new Date();
+                const dakikaSimdi = simdi.getHours() * 60 + simdi.getMinutes();
+                window.currentVakitler.forEach(v => {
+                    const dakikaVakit = saatToDakika(v.saat);
+                    if (Math.abs(dakikaSimdi - dakikaVakit) <= 1) { // 1 dakika tolerans
+                        new Notification(`${v.isim} Ez
