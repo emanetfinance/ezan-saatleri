@@ -132,6 +132,7 @@
 
         // Vakitleri dakikaya çevir
         function saatToDakika(saatStr) {
+            if (!saatStr) return null;
             const [saat, dakika] = saatStr.split(':').map(Number);
             return saat * 60 + dakika;
         }
@@ -146,17 +147,27 @@
             sonucDiv.innerHTML = '<div class="loading">Yükleniyor...</div>';
 
             try {
+                console.log('API isteği gönderiliyor:', apiUrl);
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error(`API hatası: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`API hatası: ${response.status} - ${response.statusText}`);
+                }
                 const data = await response.json();
+                console.log('API yanıtı:', data);
 
+                // Veri kontrolü
+                if (!data || !data.Imsak) {
+                    throw new Error('API yanıtı eksik veya hatalı.');
+                }
+
+                // Vakit isimleri ve saatler
                 const vakitler = [
-                    { isim: 'İmsak', saat: data.Imsak },
-                    { isim: 'Sabah', saat: data.Gunes },
-                    { isim: 'Öğle', saat: data.Ogle },
-                    { isim: 'İkindi', saat: data.Ikindi },
-                    { isim: 'Akşam', saat: data.Aksam },
-                    { isim: 'Yatsı', saat: data.Yatsi }
+                    { isim: 'İmsak', saat: data.Imsak || 'Bilinmiyor' },
+                    { isim: 'Sabah', saat: data.Gunes || 'Bilinmiyor' },
+                    { isim: 'Öğle', saat: data.Ogle || 'Bilinmiyor' },
+                    { isim: 'İkindi', saat: data.Ikindi || 'Bilinmiyor' },
+                    { isim: 'Akşam', saat: data.Aksam || 'Bilinmiyor' },
+                    { isim: 'Yatsı', saat: data.Yatsi || 'Bilinmiyor' }
                 ];
 
                 let html = '';
@@ -171,8 +182,8 @@
                 window.currentVakitler = vakitler;
                 vakitKontrolBaslat();
             } catch (error) {
-                console.error('Hata:', error);
-                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}</div>`;
+                console.error('Hata detayları:', error);
+                sonucDiv.innerHTML = `<div class="error">Hata: ${error.message}. Lütfen tekrar deneyin veya başka bir şehir seçin.</div>`;
             }
         }
 
@@ -183,12 +194,13 @@
                 Notification.requestPermission().then(permission => {
                     if (permission === 'granted') {
                         document.getElementById('sesIzni').textContent = 'Sesli bildirimler etkin!';
-                        // Ezan sesi (ücretsiz MP3, Vercel'e yükle veya external kullan)
-                        window.ezanSes = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'); // Örnek zil sesi, ezan MP3'ü değiştir
+                        window.ezanSes = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.wav');
                     } else {
                         document.getElementById('sesIzni').textContent = 'İzin reddedildi.';
                     }
                 });
+            } else {
+                document.getElementById('sesIzni').textContent = 'Tarayıcı bildirimleri desteklemiyor.';
             }
         }
 
@@ -200,5 +212,33 @@
                 const dakikaSimdi = simdi.getHours() * 60 + simdi.getMinutes();
                 window.currentVakitler.forEach(v => {
                     const dakikaVakit = saatToDakika(v.saat);
-                    if (Math.abs(dakikaSimdi - dakikaVakit) <= 1) { // 1 dakika tolerans
-                        new Notification(`${v.isim} Ez
+                    if (dakikaVakit && Math.abs(dakikaSimdi - dakikaVakit) <= 1) {
+                        new Notification(`${v.isim} Ezanı!`, { body: `${v.saat} - Haydi namaza!` });
+                        window.ezanSes.play().catch(e => console.log('Ses çalma hatası:', e));
+                    }
+                });
+            }, 60000);
+        }
+
+        // Sayfa yüklenince
+        window.onload = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const nearestCityId = findNearestCity(position.coords.latitude, position.coords.longitude);
+                        console.log('Konum bulundu, şehir:', nearestCityId);
+                        getVakitler(nearestCityId);
+                    },
+                    error => {
+                        console.error('Konum hatası:', error);
+                        getVakitler(); // Varsayılan: İstanbul
+                    }
+                );
+            } else {
+                console.log('Konum desteklenmiyor, varsayılan şehir yükleniyor.');
+                getVakitler();
+            }
+        };
+    </script>
+</body>
+</html>
